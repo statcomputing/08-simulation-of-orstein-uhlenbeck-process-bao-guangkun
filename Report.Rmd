@@ -1,0 +1,163 @@
+---
+title: "Report"
+author: "Guangkun Bao"
+date: "2020/11/6"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+Sys.setenv(LANG = "en")
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# 5.3.3 Orstein–Uhlenbeck Process
+
+## 1
+
+In the Vasicek model of the Ornstein-Uhlenbeck process, 
+$$r(t_{i+1}) = r(t_{i})e^{H(t_{i+1}) - H(t_{i})} + \mu(t_{i},t_{i+1}) + \sigma_{r}(t_{i},t_{i+1}) Z_{i+1},$$
+ 
+where $t_{i+1} = t_{i}+\triangle$, 
+$H(t_{i+1})-H(t_{i}) = -\alpha\triangle$, 
+$\mu(t_{i},t_{i+1}) = b\alpha\int_{t_{i}}^{t_{i+1}}e^{-\alpha (t_{i+1}-s)}ds = b(1-e^{-\alpha\triangle})$,
+$\sigma_{r}(t_{i},t_{i+1}) = \frac{\sigma}{\sqrt{2\alpha}}\sqrt{1-e^{-2\alpha\triangle}},$
+$Z_{i+1} \sim N(0,1)$.
+
+Let $t$ denotes $t_{i}$, $t+\triangle$ denotes $t_{i+1}$. Then
+$$r(t+\triangle) = e^{-\alpha\triangle}r(t)+b(1-e^{-\alpha\triangle})+ \frac{\sigma}{\sqrt{2\alpha}}\sqrt{1-e^{-2\alpha\triangle}}Z,$$ 
+where $Z\sim N(0,1)$.
+
+## 2
+
+```{r}
+r0 = 1
+T = 500
+delta = 1/500
+
+rou = function(alpha,sigma,b,r0,T,delta){ 
+  r = c(r0)
+  times = T/delta
+  for(i in (1:times)){
+    rt = r[i]
+    p1 = exp(-alpha*delta) * rt
+    p2 = b * (1-exp(-alpha*delta))
+    p3 = sigma/sqrt(2*alpha) * (1-exp(-2*alpha*delta))^0.5
+    z = rnorm(1)
+    r[i+1] = p1+p2+p3*z
+    }
+  return(r)
+}
+
+```
+
+I construct the 18 sample paths in one figure.
+```{r}
+par(mfrow=c(3,6))
+for (alpha in c(0.1,1,5))
+{for (sigma in c(0.1,0.2,0.5))
+  {for (b in c(-5,5))
+    {r = rou(alpha,sigma,b,r0 = 1,T = 500,delta = 1/500)
+    plot(x=seq(0,T,by=1/500), y = r, main = '', xlab = 'time', ylab = 'sample')
+      
+    }
+    
+  }
+}
+```
+
+From the plots above, it seems that when $\alpha$ increases, the path tends to be more steady, while when $\sigma$ increases, the path tends to be unstable.
+
+## 3
+
+Consider $\alpha=1$,$\sigma=0.5$,b=5,r$_{0}$ = 1.
+
+```{r}
+em = function(size,delta,alpha,sigma,b,r0){
+  r1 = 0
+  times = 1/delta
+  for (i in (1:size)){
+    rt = r0
+    for (j in (1:times)){
+      mean = rt + alpha * (b-rt) * delta
+      sd = delta * sigma 
+      rt = rnorm(n=1,mean=mean,sd=sd)
+      }
+    r1[i] = rt
+  }
+  return(r1)
+}
+```
+
+When $\delta$ =1, the kernel density is 
+```{r}
+r1 = em(size = 1000, delta = 1, alpha = 1, sigma = 0.5, b = 5, 
+        r0 = 1)
+r1 = unlist(r1)
+plot(density(r1),xlab = '',ylab = '',main = 'kernel density')
+```
+When $\delta$ =0.5, the kernel density is 
+```{r}
+r1 = em(size = 1000, delta = 0.5, alpha = 1, sigma = 0.5, b = 5, 
+        r0 = 1)
+r1 = unlist(r1)
+plot(density(r1),xlab = '',ylab = '',main = 'kernel density')
+```
+When $\delta$ =0.1, the kernel density is 
+```{r}
+r1 = em(size = 1000, delta = 0.1, alpha = 1, sigma = 0.5, b = 5,
+        r0 = 1)
+r1 = unlist(r1)
+plot(density(r1),xlab = '',ylab = '',main = 'kernel density')
+```
+When $\delta$ =0.01, the kernel density is 
+```{r}
+r1 = em(size = 1000, delta = 0.01, alpha = 1, sigma = 0.5, b = 5,
+   r0 = 1)
+r1 = unlist(r1)
+plot(density(r1),xlab = '',ylab = '',main = 'kernel density')
+```
+
+# 5.3.4 Poisson Process
+
+## 1
+
+```{}
+Integrate[t^(1/2)+E^(-t)*Sin[2*Pi* t], {t,0,5}]
+```
+By using mathematica we have 
+
+$$Z =\int_{0}^{5} \sqrt{t}+e^{-t}sin(2\pi t)dt = 7.607738$$
+
+Since it is a Poisson process, N(5) $\sim$ Poisson(Z).Therefore N(5) $\sim$ Poisson(7.6).
+
+## 2
+
+Simulation of a nonhomegeneous Poisson process with the thinning method
+
+```{r}
+rnhpp <- function(intensity, intmax, tmax) {
+  n <- rpois(1, intmax)
+  tt <- runif(n, 0, tmax)
+  u <- runif(n)
+  accept <- u < intensity(tt) / intmax
+  sort(tt[accept])
+}
+
+intfun <- function(x) sqrt(x)+sin(2 * pi * x)*exp(-x)
+```
+
+
+## 3
+
+Pool all the event points together as a sample and plot their kernel density. Overlay $\lambda(t) / \int_0^5 \lambda{s}ds$ with the kernel density.
+
+```{r}
+intmax = 10*sqrt(5)/3+(2*pi*(-1+exp(5)))/(exp(5)*(1+4*pi^2))
+xx=unlist(replicate(1000, rnhpp(intfun, intmax, 5)))
+plot(density(xx),xlab = '',ylab = '',main = '')
+
+t=seq(0,5,0.005)
+tt=intfun(t)/7.607738
+par(new=TRUE)
+plot(t,tt,type = 'l',col = 'red',xlab = '',ylab = '',axes = FALSE)
+```
