@@ -24,7 +24,7 @@ $\sigma_{r}(t_{i},t_{i+1}) = \frac{\sigma}{\sqrt{2\alpha}}\sqrt{1-e^{-2\alpha\tr
 $Z_{i+1} \sim N(0,1)$.
 
 Let $t$ denotes $t_{i}$, $t+\triangle$ denotes $t_{i+1}$. Then
-$$r(t+\triangle) = e^{-\alpha\triangle}r(t)+b(1-e^{-\alpha\triangle})+ \frac{\sigma}{\sqrt{2\alpha}}\sqrt{1-e^{-2\alpha\triangle}}Z,$$ 
+$$r(t+\triangle) = r(t)e^{-\alpha\triangle}+b(1-e^{-\alpha\triangle})+ \frac{\sigma}{\sqrt{2\alpha}}\sqrt{1-e^{-2\alpha\triangle}}Z,$$ 
 where $Z\sim N(0,1)$.
 
 ## 2
@@ -69,7 +69,7 @@ From the plots above, it seems that when $\alpha$ increases, the path tends to b
 
 ## 3
 
-Consider $\alpha=1$,$\sigma=0.5$,b=5,r$_{0}$ = 1.
+Consider $\alpha = 1$,$\sigma = 0.5$,$b = 5$,$r_{0} = 1$.
 
 ```{r}
 em = function(size,delta,alpha,sigma,b,r0){
